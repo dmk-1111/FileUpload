@@ -104,8 +104,14 @@ async function renderIndex(res, options = {}) {
     });
 }
 
-app.get("/", async (req, res) => {
-    await renderIndex(res, { page: requestedPage(req.query.page) });
+app.get("/", async (req, res, next) => {
+    try {
+        await renderIndex(res, {
+            page: requestedPage(req.query.page)
+        });
+    } catch (error) {
+        next(error);
+    }
 });
 
 app.post("/records", upload.array("files", 10), async (req, res, next) => {
@@ -279,3 +285,5 @@ await checkConnection();
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
+
+export default app;
