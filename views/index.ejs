@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="../public/icons/dmk_logo.ico">
+    <title>File uploads</title>
+    <style>
+        :root { font-family: Arial, sans-serif; color: #1f2937; background: #f3f4f6; }
+        body { max-width: 960px; margin: 40px auto; padding: 0 20px; }
+        h1, h2 { margin-top: 0; }
+        section { margin-bottom: 28px; padding: 24px; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0000000d; }
+        label { display: block; margin: 14px 0 6px; font-weight: 600; }
+        input[type="text"], input[type="file"] { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        button, .button { display: inline-block; padding: 9px 14px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; text-decoration: none; cursor: pointer; font: inherit; }
+        .secondary { background: #64748b; }
+        .danger { background: #dc2626; }
+        .actions { display: flex; gap: 8px; align-items: center; }
+        .actions form { margin: 0; }
+        .pagination { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 20px; }
+        .pagination a, .pagination span { padding: 8px 11px; border-radius: 6px; text-decoration: none; }
+        .pagination a { color: #2563eb; background: #eff6ff; }
+        .pagination .current { color: #fff; background: #2563eb; }
+        .pagination .disabled { color: #94a3b8; background: #f1f5f9; }
+        .error { margin-bottom: 16px; color: #b91c1c; }
+        .current-files { margin: 8px 0; padding-left: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
+        th { background: #f8fafc; }
+        .empty { color: #64748b; }
+        @media (max-width: 640px) {
+            body { margin-top: 20px; padding: 0 12px; }
+            section { padding: 16px; overflow-x: auto; }
+            table { min-width: 600px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>File uploads</h1>
+
+    <section>
+        <h2><%= editingRecord ? "Edit record" : "Add a record" %></h2>
+        <% if (error) { %>
+            <p class="error" role="alert"><%= error %></p>
+        <% } %>
+        <form action="<%= editingRecord ? `/records/${editingRecord._id}/edit?page=${currentPage}` : "/records" %>" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="page" value="<%= currentPage %>">
+            <label for="name">Name</label>
+            <input id="name" name="name" type="text" value="<%= nameValue %>" required maxlength="200">
+
+            <% if (editingRecord && editingRecord.files.length) { %>
+                <label>Uploaded files</label>
+                <ul class="current-files">
+                    <% editingRecord.files.forEach((file) => { %>
+                        <li>
+                            <% if (/\.(avif|bmp|gif|jpe?g|png|webp)$/i.test(file.originalName)) { %>
+                                <a href="/records/<%= editingRecord._id %>/images/<%= file.storageName %>" target="_blank" rel="noopener"><%= file.originalName %></a>
+                            <% } else { %>
+                                <a href="/records/<%= editingRecord._id %>/files/<%= file.storageName %>"><%= file.originalName %></a>
+                            <% } %>
+                        </li>
+                    <% }); %>
+                </ul>
+                <p>New files will be added to this record.</p>
+            <% } %>
+
+            <label for="files"><%= editingRecord ? "Add more files (optional)" : "Files" %></label>
+            <input id="files" name="files" type="file" multiple>
+            <p>Up to 10 files, 10 MB each.</p>
+
+            <button type="submit"><%= editingRecord ? "Save changes" : "Create record" %></button>
+            <% if (editingRecord) { %>
+                <a class="button secondary" href="/?page=<%= currentPage %>">Cancel</a>
+            <% } %>
+        </form>
+    </section>
+
+    <section>
+        <h2>Records</h2>
+        <p class="empty">Showing <%= records.length ? (currentPage - 1) * recordsPerPage + 1 : 0 %>–<%= (currentPage - 1) * recordsPerPage + records.length %> of <%= totalRecords %> records</p>
+        <% if (records.length) { %>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Files</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% records.forEach((record) => { %>
+                        <tr>
+                            <td><%= record.name %></td>
+                            <td>
+                                <% if (record.files.length) { %>
+                                    <ul>
+                                        <% record.files.forEach((file) => { %>
+                                            <li>
+                                                <% if (/\.(avif|bmp|gif|jpe?g|png|webp)$/i.test(file.originalName)) { %>
+                                                    <a href="/records/<%= record._id %>/images/<%= file.storageName %>" target="_blank" rel="noopener"><%= file.originalName %></a>
+                                                <% } else { %>
+                                                    <a href="/records/<%= record._id %>/files/<%= file.storageName %>"><%= file.originalName %></a>
+                                                <% } %>
+                                            </li>
+                                        <% }); %>
+                                    </ul>
+                                <% } else { %>
+                                    <span class="empty">No files</span>
+                                <% } %>
+                            </td>
+                            <td><%= new Date(record.createdAt).toLocaleString() %></td>
+                            <td>
+                                <div class="actions">
+                                    <a class="button" href="/records/<%= record._id %>/edit?page=<%= currentPage %>">Edit</a>
+                                    <form action="/records/<%= record._id %>/delete" method="post" onsubmit="return confirm('Delete this record and its files?')">
+                                        <input type="hidden" name="page" value="<%= currentPage %>">
+                                        <button class="danger" type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <p class="empty">No records yet. Create one using the form above.</p>
+        <% } %>
+        <% if (totalPages > 1) { %>
+            <nav class="pagination" aria-label="Pagination">
+                <% if (currentPage > 1) { %>
+                    <a href="/?page=<%= currentPage - 1 %>" aria-label="Previous page">Previous</a>
+                <% } else { %>
+                    <span class="disabled" aria-disabled="true">Previous</span>
+                <% } %>
+                <% pageNumbers.forEach((pageNumber) => { %>
+                    <% if (pageNumber === currentPage) { %>
+                        <span class="current" aria-current="page"><%= pageNumber %></span>
+                    <% } else { %>
+                        <a href="/?page=<%= pageNumber %>"><%= pageNumber %></a>
+                    <% } %>
+                <% }); %>
+                <% if (currentPage < totalPages) { %>
+                    <a href="/?page=<%= currentPage + 1 %>" aria-label="Next page">Next</a>
+                <% } else { %>
+                    <span class="disabled" aria-disabled="true">Next</span>
+                <% } %>
+            </nav>
+        <% } %>
+    </section>
+</body>
+</html>
