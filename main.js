@@ -281,6 +281,6 @@ app.use(async (error, req, res, _next) => {
     });
 });
 
-// await checkConnection();
+await checkConnection();
 
 export default app;
