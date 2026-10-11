@@ -281,9 +281,6 @@ app.use(async (error, req, res, _next) => {
     });
 });
 
-await checkConnection();
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+// await checkConnection();
 
 export default app;
