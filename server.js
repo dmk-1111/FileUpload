@@ -282,5 +282,11 @@ app.use(async (error, req, res, _next) => {
 });
 
 await checkConnection();
+// app.listen(3000, (err) => {
+//     if(err){
+//         console.log(err);
+//     }
+//     console.log("http://localhost:3000")
+// })
 
 export default app;
