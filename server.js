@@ -6,11 +6,14 @@ import express from "express";
 import multer from "multer";
 import { ObjectId } from "mongodb";
 import { client, checkConnection } from "./config/dbConnection.js";
+import fs from 'node:fs';
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const recordsPerPage = 5;
-const uploadsDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), "uploads");
+// const uploadsDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), "uploads");
+const uploadsDirectory = "/uploads/";
+fs.mkdirSync(uploadsDirectory, { recursive: true });
 const database = client.db(process.env.MONGODB_DATABASE || "system_uploads");
 const records = database.collection("uploads");
 const imageContentTypes = {
@@ -36,6 +39,10 @@ const upload = multer({
     }
 });
 
+app.use((req, res, next) => {
+    console.log(req.method, req.originalUrl);
+    next();
+});
 app.set("view engine", "ejs");
 app.set("views", path.join(path.dirname(fileURLToPath(import.meta.url)), "views"));
 
